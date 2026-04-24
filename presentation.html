@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spring Music — Modernisation Workshop</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      line-height: 1.6;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+      border-bottom: 1px solid #30363d;
+      padding: 3rem 2rem;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 2.4rem;
+      font-weight: 700;
+      color: #f0f6fc;
+      letter-spacing: -0.5px;
+    }
+
+    header .subtitle {
+      margin-top: 0.75rem;
+      font-size: 1.1rem;
+      color: #8b949e;
+    }
+
+    .badge {
+      display: inline-block;
+      margin-top: 1rem;
+      padding: 0.3rem 0.9rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      background: #238636;
+      color: #fff;
+    }
+
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+
+    section {
+      margin-bottom: 3rem;
+    }
+
+    h2 {
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: #f0f6fc;
+      border-bottom: 1px solid #30363d;
+      padding-bottom: 0.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #79c0ff;
+      margin: 1.25rem 0 0.5rem;
+    }
+
+    p { color: #c9d1d9; margin-bottom: 0.75rem; }
+
+    .problem-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .problem-card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-left: 3px solid #f85149;
+      border-radius: 6px;
+      padding: 1rem 1.25rem;
+    }
+
+    .problem-card .title {
+      font-weight: 600;
+      color: #f85149;
+      margin-bottom: 0.4rem;
+      font-size: 0.9rem;
+    }
+
+    .problem-card p { font-size: 0.875rem; margin: 0; }
+
+    .pipeline {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin: 1rem 0;
+    }
+
+    .pipeline-step {
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 0.4rem 0.9rem;
+      font-size: 0.85rem;
+      color: #c9d1d9;
+      white-space: nowrap;
+    }
+
+    .pipeline-arrow {
+      color: #58a6ff;
+      font-size: 1.1rem;
+    }
+
+    .context-table, .phase-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      margin-top: 0.75rem;
+    }
+
+    .context-table th, .phase-table th {
+      text-align: left;
+      padding: 0.6rem 0.75rem;
+      background: #21262d;
+      color: #8b949e;
+      font-weight: 600;
+      border-bottom: 1px solid #30363d;
+    }
+
+    .context-table td, .phase-table td {
+      padding: 0.6rem 0.75rem;
+      border-bottom: 1px solid #21262d;
+      color: #c9d1d9;
+      vertical-align: top;
+    }
+
+    .context-table tr:hover td, .phase-table tr:hover td {
+      background: #161b22;
+    }
+
+    code {
+      font-family: "SFMono-Regular", Consolas, monospace;
+      background: #21262d;
+      color: #79c0ff;
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      font-size: 0.85em;
+    }
+
+    .decision-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 0.75rem;
+    }
+
+    @media (max-width: 600px) {
+      .decision-grid { grid-template-columns: 1fr; }
+    }
+
+    .decision-card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 1rem 1.25rem;
+    }
+
+    .decision-card .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.5rem;
+    }
+
+    .decision-card.hook .label { color: #f85149; }
+    .decision-card.prompt .label { color: #3fb950; }
+    .decision-card p { font-size: 0.875rem; margin: 0; }
+
+    .status-done { color: #3fb950; font-weight: 600; }
+    .status-pending { color: #8b949e; }
+    .status-parallel { color: #d29922; }
+
+    .command-list {
+      list-style: none;
+      margin-top: 0.75rem;
+    }
+
+    .command-list li {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
+    }
+
+    .command-list li code {
+      display: block;
+      margin-bottom: 0.35rem;
+      font-size: 0.9em;
+    }
+
+    .command-list li .desc { color: #8b949e; }
+
+    .insight-list {
+      list-style: none;
+      margin-top: 0.75rem;
+    }
+
+    .insight-list li {
+      padding: 0.6rem 0;
+      border-bottom: 1px solid #21262d;
+      color: #c9d1d9;
+      font-size: 0.9rem;
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .insight-list li:last-child { border-bottom: none; }
+
+    .insight-list li .icon { color: #58a6ff; flex-shrink: 0; }
+
+    footer {
+      text-align: center;
+      padding: 2rem;
+      color: #484f58;
+      font-size: 0.8rem;
+      border-top: 1px solid #21262d;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Spring Music — Modernisation Workshop</h1>
+  <p class="subtitle">Safe microservice extraction from a Java monolith, Claude Code as engineering partner</p>
+  <span class="badge">Phase 1 Complete</span>
+</header>
+
+<main>
+
+  <!-- THE PROBLEM -->
+  <section>
+    <h2>The Problem</h2>
+    <p>Extracting services from a monolith is the riskiest refactoring category. Three failure modes kill most attempts:</p>
+    <div class="problem-grid">
+      <div class="problem-card">
+        <div class="title">Cutting without pinning</div>
+        <p>You start the extraction before locking current behaviour. Regressions appear weeks later in production.</p>
+      </div>
+      <div class="problem-card">
+        <div class="title">Leaking the old model</div>
+        <p>The new service exposes fields like <code>lastPlayedBy</code> and <code>playCount</code>. You extracted code but not the coupling.</p>
+      </div>
+      <div class="problem-card">
+        <div class="title">No rollback plan</div>
+        <p>The 3am cutover has no decision tree. A failing health check becomes a 9am incident review.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- THE APPROACH -->
+  <section>
+    <h2>The Approach</h2>
+    <p>Strangler fig with test-pinned extraction. Every extraction follows the same gated sequence:</p>
+    <div class="pipeline">
+      <div class="pipeline-step">pin behaviour</div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">rank seams</div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">extract</div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">fence boundary</div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">write runbook</div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">score quality</div>
+    </div>
+    <p>Claude Code coordinates the work across 6 phases. No phase starts until the previous gate is verified by running tests — not by Claude's judgement, by the test suite.</p>
+  </section>
+
+  <!-- HOW CLAUDE WAS TAUGHT -->
+  <section>
+    <h2>How Claude Was Taught to Work Here</h2>
+
+    <h3>Three-level context hierarchy</h3>
+    <p>A single project-level instruction like "don't add to the monolith" is easy for an LLM to ignore when it's deep in a file. A directory-level CLAUDE.md that Claude reads the moment it opens any file in <code>music/</code> is impossible to miss.</p>
+
+    <table class="context-table">
+      <thead>
+        <tr><th>Level</th><th>File</th><th>What it enforces</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>User</td><td><code>~/.claude/CLAUDE.md</code></td><td>English, conventional commits, terse style — applies to all projects</td></tr>
+        <tr><td>Project</td><td><code>CLAUDE.md</code></td><td>Service boundary rules, agent order, test tag conventions</td></tr>
+        <tr><td>Directory</td><td><code>src/.../music/CLAUDE.md</code></td><td>"You are in the legacy monolith root. Prefer extraction over addition."</td></tr>
+        <tr><td>Directory</td><td><code>new-service/CLAUDE.md</code></td><td>"Never reference monolith packages. These field names are forbidden in the API."</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Hooks for hard rules, prompts for preferences</h3>
+    <p>Two different mechanisms enforce two different things:</p>
+
+    <div class="decision-grid">
+      <div class="decision-card hook">
+        <div class="label">PreToolUse Hook (Phase 5)</div>
+        <p>Blocks any Edit or Write that puts <code>lastPlayedBy</code>, <code>playCount</code>, <code>recommendedFor</code>, or <code>_class</code> into <code>catalog-service/</code>. Exits 1 — the edit never happens. Cannot be reasoned around.</p>
+      </div>
+      <div class="decision-card prompt">
+        <div class="label">Directory CLAUDE.md (preference)</div>
+        <p>"Prefer extraction over adding here" — guidance with legitimate exceptions. A bug fix in the monolith while extraction is in progress is valid. The hook doesn't block that.</p>
+      </div>
+    </div>
+
+    <h3>Parallel agent spawning with explicit context</h3>
+    <p>Three of the six phases spawn two specialised agents simultaneously in a single coordinator message. Each subagent receives its full context explicitly in the prompt — package paths, class lists, dependency graphs, scoring rubrics. Subagents do not inherit the coordinator's conversation. This makes each agent independently reproducible and prevents context bleed between concerns.</p>
+  </section>
+
+  <!-- PHASES -->
+  <section>
+    <h2>Execution Plan</h2>
+    <table class="phase-table">
+      <thead>
+        <tr><th>Phase</th><th>Work</th><th>Agents</th><th>Gate</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td>Context hierarchy + slash commands</td>
+          <td><em>manual</em></td>
+          <td>CLAUDE.md levels in place</td>
+          <td><span class="status-done">Done</span></td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>User stories + decomposition ADR</td>
+          <td><span class="status-parallel">pm-stories || architect-map</span></td>
+          <td>ADR with seam ranking table</td>
+          <td><span class="status-pending">Pending</span></td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>Characterization tests + scout report</td>
+          <td><span class="status-parallel">tester-pin || agentic-scouts</span></td>
+          <td><code>*.characterization.*</code> green</td>
+          <td><span class="status-pending">Pending</span></td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td>Extract catalog service</td>
+          <td>dev-cut</td>
+          <td>Both <code>characterization</code> + <code>contract</code> green on same commit</td>
+          <td><span class="status-pending">Pending</span></td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td>Fence + cutover runbook</td>
+          <td><span class="status-parallel">dev-fence || ops-weekend</span></td>
+          <td>BoundaryLeakTest passing; hook registered and smoke-tested</td>
+          <td><span class="status-pending">Pending</span></td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td>Eval harness + CI gate</td>
+          <td>quality-scorecard</td>
+          <td>False-confidence rate &lt; 20% in CI</td>
+          <td><span class="status-pending">Pending</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- SLASH COMMANDS -->
+  <section>
+    <h2>Custom Slash Commands</h2>
+    <p>Reusable playbooks in <code>.claude/commands/</code> — callable by any engineer, not just the person who set up the project:</p>
+    <ul class="command-list">
+      <li>
+        <code>/extract-service &lt;seam-name&gt;</code>
+        <span class="desc">7-step extraction playbook: verify characterization suite → locate seam → create module → strangler proxy → ACL translator → verify both suites green → report what couldn't be cut cleanly</span>
+      </li>
+      <li>
+        <code>/pin-behavior</code>
+        <span class="desc">Runs <code>./gradlew test --tests "*.characterization.*"</code>, produces a pass/fail table, and recommends whether each failure is a regression or an intentional change — without ever modifying a pin without explicit instruction</span>
+      </li>
+      <li>
+        <code>/score-seam &lt;seam-name&gt;</code>
+        <span class="desc">Gathers package contents and dependency graph, spawns a Task subagent with a structured scoring rubric (coupling 1–5, test coverage %, data-model tangle 1–5, business criticality), compares the verdict against the human ADR ranking</span>
+      </li>
+    </ul>
+  </section>
+
+  <!-- KEY INSIGHTS -->
+  <section>
+    <h2>Key Design Insights</h2>
+    <ul class="insight-list">
+      <li>
+        <span class="icon">→</span>
+        <span>Characterization tests pin <em>field names</em>, not just values — so a rename breaks the test with a message that says exactly what changed, not just "something broke"</span>
+      </li>
+      <li>
+        <span class="icon">→</span>
+        <span>The strangler proxy defaults to <code>false</code> — monolith serves all traffic until ops explicitly flips the flag per environment. Zero risk on deploy.</span>
+      </li>
+      <li>
+        <span class="icon">→</span>
+        <span>The eval harness (Phase 6) tracks <em>false-confidence rate</em> — the % of wrong proposals where Claude reported confidence ≥ 0.8. A model that knows what it doesn't know is more useful than one that is wrong confidently.</span>
+      </li>
+      <li>
+        <span class="icon">→</span>
+        <span>The agentic-scouts output is compared against the human ADR ranking. Agreements validate the ADR; disagreements expose hidden risk the human author missed.</span>
+      </li>
+      <li>
+        <span class="icon">→</span>
+        <span>The cutover runbook is generated <em>before</em> cutover, rehearsed once, and includes a Mermaid decision tree — so the 3am engineer makes zero judgement calls.</span>
+      </li>
+    </ul>
+  </section>
+
+</main>
+
+<footer>
+  Spring Music Modernisation Workshop &mdash; Claude Code bootcamp &mdash; Jacek Slupianek
+</footer>
+
+</body>
+</html>

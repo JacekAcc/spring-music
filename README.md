@@ -1,108 +1,163 @@
-Spring Music
-============
+# Spring Music — Modernisation Workshop
 
-This is a sample application for using database services on [Cloud Foundry](http://cloudfoundry.org) with the [Spring Framework](http://spring.io) and [Spring Boot](http://projects.spring.io/spring-boot/).
+A Spring Boot monolith being safely decomposed into microservices using Claude Code as the engineering partner. The goal is not speed — it is **zero behaviour regressions** throughout the extraction.
 
-This application has been built to store the same domain objects in one of a variety of different persistence technologies - relational, document, and key-value stores. This is not meant to represent a realistic use case for these technologies, since you would typically choose the one most applicable to the type of data you need to store, but it is useful for testing and experimenting with different types of services on Cloud Foundry.
+**Current status:** Phase 1 complete — context hierarchy, slash commands, and agent pipeline established. Phases 2–6 in progress.
 
-The application use Spring Java configuration and [bean profiles](http://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-profiles.html) to configure the application and the connection objects needed to use the persistence stores. It also uses the [Spring Cloud Connectors](http://cloud.spring.io/spring-cloud-connectors/) library to inspect the environment when running on Cloud Foundry. See the [Cloud Foundry documentation](http://docs.cloudfoundry.org/buildpacks/java/spring-service-bindings.html) for details on configuring a Spring application for Cloud Foundry.
+---
 
-## Building
+## The Problem
 
-This project requires Java 8 or later to compile.
+Extracting services from a monolith is the riskiest refactoring category. The usual failure modes are:
 
-To build a runnable Spring Boot jar file, run the following command: 
+- Starting the cut before pinning current behaviour → regressions that nobody notices until production
+- Letting the new service leak the old data model → you extracted the code but not the coupling
+- No rollback plan → the 3am cutover becomes a 9am incident
 
-~~~
-$ ./gradlew clean assemble
-~~~
+This repo works through all three systematically, using Claude Code to do the archaeology and enforce the boundaries.
 
-## Running the application locally
+## The Approach
 
-One Spring bean profile should be activated to choose the database provider that the application should use. The profile is selected by setting the system property `spring.profiles.active` when starting the app.
+**Strangler fig with test-pinned extraction.** Each extraction follows the same sequence:
 
-The application can be started locally using the following command:
+```
+pin behaviour → rank seams → extract → fence boundary → write runbook → score quality
+```
 
-~~~
-$ java -jar -Dspring.profiles.active=<profile> build/libs/spring-music.jar
-~~~
+Claude Code coordinates the work using a 6-phase plan with explicit gates. No phase starts until the previous phase's gate condition is verified by running tests.
 
-where `<profile>` is one of the following values:
+## How Claude Was Taught to Work Here
 
-* `mysql`
-* `postgres`
-* `mongodb`
-* `redis`
+Three distinct layers of context keep Claude from making the wrong call:
 
-If no profile is provided, an in-memory relational database will be used. If any other profile is provided, the appropriate database server must be started separately. Spring Boot will auto-configure a connection to the database using it's auto-configuration defaults. The connection parameters can be configured by setting the appropriate [Spring Boot properties](http://docs.spring.io/spring-boot/docs/current/reference/html/common-application-properties.html).
+| Layer | File | What it enforces |
+|-------|------|-----------------|
+| User | `~/.claude/CLAUDE.md` | English, conventional commits, terse style |
+| Project | `CLAUDE.md` _(this file)_ | Service boundary rules, agent order, test tag conventions |
+| Directory | `src/.../music/CLAUDE.md` | "You are in the monolith root — prefer extraction over addition" |
+| Directory | `new-service/CLAUDE.md` | "Never reference monolith packages; these field names are forbidden in the API" |
 
-If more than one of these profiles is provided, the application will throw an exception and fail to start.
+**Why directory-level CLAUDE.md?** Because a project-level instruction like "don't add to the monolith" is easy to ignore. A file that Claude reads the moment it opens a file inside `music/` is impossible to miss. The instruction is co-located with the risk.
 
-## Running the application on Cloud Foundry
+**Hooks vs. prompts for enforcement.** The PreToolUse fence hook (Phase 5) blocks any edit that writes monolith-internal field names into `catalog-service/`. This is a hook, not a prompt instruction, because enforcement that can be "reasoned around" is not enforcement. The hook exits 1; the edit never happens. See `docs/adr/002-fence-strategy.md` for the decision record.
 
-When running on Cloud Foundry, the application will detect the type of database service bound to the application (if any). If a service of one of the supported types (MySQL, Postgres, Oracle, MongoDB, or Redis) is bound to the app, the appropriate Spring profile will be configured to use the database service. The connection strings and credentials needed to use the service will be extracted from the Cloud Foundry environment.
+**Parallel agent spawning.** Three of the six phases spawn two agents simultaneously in a single coordinator message. Agents receive full explicit context in their prompts — they do not inherit the coordinator's conversation. This is the explicit-context pattern required when subagents must be independently reproducible.
 
-If no bound services are found containing any of these values in the name, an in-memory relational database will be used.
+## Phases and Progress
 
-If more than one service containing any of these values is bound to the application, the application will throw an exception and fail to start.
+| Phase | What | Agents | Gate | Status |
+|-------|------|--------|------|--------|
+| 1 | Context hierarchy + commands | _(manual)_ | CLAUDE.md levels in place | **Done** |
+| 2 | Stories + decomposition ADR | `pm-stories` \|\| `architect-map` | ADR with seam ranking table | Pending |
+| 3 | Characterization tests + scout report | `tester-pin` \|\| `agentic-scouts` | `./gradlew test --tests "*.characterization.*"` green | Pending |
+| 4 | Extract catalog service | `dev-cut` | Both `@Tag("characterization")` and `@Tag("contract")` green | Pending |
+| 5 | Fence + cutover runbook | `dev-fence` \|\| `ops-weekend` | `BoundaryLeakTest` passing; hook registered | Pending |
+| 6 | Eval harness | `quality-scorecard` | False-confidence rate < 20% in CI | Pending |
 
-After installing the 'cf' [command-line interface for Cloud Foundry](http://docs.cloudfoundry.org/cf-cli/), targeting a Cloud Foundry instance, and logging in, the application can be built and pushed using these commands:
+## Quick Start
 
-~~~
-$ cf push
-~~~
+```bash
+# Build
+./gradlew clean assemble
 
-The application will be pushed using settings in the provided `manifest.yml` file. The output from the command will show the URL that has been assigned to the application.
+# Run (H2 in-memory, no setup needed)
+java -jar build/libs/spring-music.jar
+
+# Tests
+./gradlew test
+./gradlew test --tests "*.characterization.*"   # pin suite only (Phase 3+)
+./gradlew test --tests "*.fence.*"              # boundary leak test (Phase 5+)
+
+# Eval scorecard (Phase 6+)
+python eval/run_eval.py
+```
+
+## Custom Slash Commands
+
+Reusable playbooks registered in `.claude/commands/`:
+
+| Command | What it does |
+|---------|-------------|
+| `/extract-service <seam>` | 7-step extraction playbook: verify pins → locate seam → create module → add strangler proxy → add ACL → verify both suites green |
+| `/pin-behavior` | Runs characterization suite, reports deviations with pass/fail table, recommends whether each failure is a regression or an intentional change |
+| `/score-seam <seam>` | Gathers explicit context for a seam, spawns a Task subagent with scoring rubric, compares verdict against human ADR ranking |
+
+## Repository Layout
+
+```
+spring-music/
+  src/                          # monolith source
+    main/java/.../music/
+      CLAUDE.md                 # directory-level: monolith context
+  new-service/
+    CLAUDE.md                   # directory-level: extracted service context
+  catalog-service/              # extracted service (Phase 4+)
+  docs/
+    stories.md                  # user stories (Phase 2)
+    adr/                        # architecture decision records
+      001-service-decomposition.md
+      002-fence-strategy.md
+    runbook/cutover.md          # ops 3am runbook (Phase 5)
+    scout-report.md             # per-seam risk scores (Phase 3)
+  eval/                         # LLM refactoring eval harness (Phase 6)
+  .claude/
+    agents/                     # 8 specialised subagents
+    commands/                   # 3 slash command playbooks
+    hooks/fence-check.sh        # PreToolUse hook (Phase 5)
+    settings.json               # hook registration
+  PLAN.md                       # 6-phase coordinator plan with dependency graph
+```
+
+---
+
+## Original Spring Music Application
+
+<details>
+<summary>Cloud Foundry setup and deployment instructions</summary>
+
+This application demonstrates swappable persistence backends on Cloud Foundry using Spring Data and Spring profiles. The same REST API works against H2, MySQL, PostgreSQL, MongoDB, or Redis — selected at startup via a profile flag.
+
+### Building
+
+```bash
+./gradlew clean assemble
+# Output: build/libs/spring-music-1.0.jar
+```
+
+Requires Java 8+.
+
+### Running locally
+
+```bash
+# H2 in-memory (no setup)
+java -jar build/libs/spring-music.jar
+
+# External database
+java -jar -Dspring.profiles.active=mysql build/libs/spring-music.jar
+# Profiles: mysql | postgres | mongodb | redis
+```
+
+### Cloud Foundry deployment
+
+```bash
+cf push
+```
+
+`manifest.yml` points to `build/libs/spring-music-1.0.jar` (1 GB memory, random route).
 
 ### Creating and binding services
 
-Using the provided manifest, the application will be created without an external database (in the `in-memory` profile). You can create and bind database services to the application using the information below.
+```bash
+cf marketplace
+cf create-service <service> <plan> <name>
+cf bind-service spring-music <name>
+cf restart spring-music
+```
 
-#### System-managed services
+User-provided service URI format: `<dbtype>://<user>:<pass>@<host>:<port>/<db>`
 
-Depending on the Cloud Foundry service provider, persistence services might be offered and managed by the platform. These steps can be used to create and bind a service that is managed by the platform:
+### Database drivers
 
-~~~
-# view the services available
-$ cf marketplace
-# create a service instance
-$ cf create-service <service> <service plan> <service name>
-# bind the service instance to the application
-$ cf bind-service <app name> <service name>
-# restart the application so the new service is detected
-$ cf restart
-~~~
+MySQL, Postgres, MSSQL, MongoDB, and Redis drivers are included. For Oracle, download `ojdbc7.jar` or `ojdbc8.jar`, place in `libs/`, and uncomment the relevant line in `build.gradle`.
 
-#### User-provided services
-
-Cloud Foundry also allows service connection information and credentials to be provided by a user. In order for the application to detect and connect to a user-provided service, a single `uri` field should be given in the credentials using the form `<dbtype>://<username>:<password>@<hostname>:<port>/<databasename>`.
-
-These steps use examples for username, password, host name, and database name that should be replaced with real values.
-
-~~~
-# create a user-provided Oracle database service instance
-$ cf create-user-provided-service oracle-db -p '{"uri":"oracle://root:secret@dbserver.example.com:1521/mydatabase"}'
-# create a user-provided MySQL database service instance
-$ cf create-user-provided-service mysql-db -p '{"uri":"mysql://root:secret@dbserver.example.com:3306/mydatabase"}'
-# bind a service instance to the application
-$ cf bind-service <app name> <service name>
-# restart the application so the new service is detected
-$ cf restart
-~~~
-
-#### Changing bound services
-
-To test the application with different services, you can simply stop the app, unbind a service, bind a different database service, and start the app:
-
-~~~
-$ cf unbind-service <app name> <service name>
-$ cf bind-service <app name> <service name>
-$ cf restart
-~~~
-
-#### Database drivers
-
-Database drivers for MySQL, Postgres, Microsoft SQL Server, MongoDB, and Redis are included in the project.
-
-To connect to an Oracle database, you will need to download the appropriate driver (e.g. from http://www.oracle.com/technetwork/database/features/jdbc/index-091264.html). Then make a `libs` directory in the `spring-music` project, and move the driver, `ojdbc7.jar` or `ojdbc8.jar`, into the `libs` directory.
-In `build.gradle`, uncomment the line `compile files('libs/ojdbc8.jar')` or `compile files('libs/ojdbc7.jar')` and run `./gradle assemble`
+</details>

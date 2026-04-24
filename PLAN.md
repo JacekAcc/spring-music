@@ -17,7 +17,7 @@ Challenge 0 (CLAUDE.md setup)
 ## Phase Overview
 
 ```
-Phase 1:  [manual setup]
+Phase 1:  [manual setup]                             ✓ DONE
 Phase 2:  [pm-stories] || [architect-map]            ← 2 agents in parallel
 Phase 3:  [tester-pin] || [agentic-scouts]            ← 2 agents in parallel
 Phase 4:  [dev-cut]
@@ -27,7 +27,7 @@ Phase 6:  [quality-scorecard]
 
 ---
 
-## Phase 1 — Foundation (manual)
+## Phase 1 — Foundation (manual) ✓ DONE
 
 **Challenge 0 — Three-Level CLAUDE.md Setup**
 

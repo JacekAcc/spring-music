@@ -2,6 +2,21 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## How Claude Is Taught to Work Here
+
+This project uses three layers of context so Claude makes the right call without being reminded every session:
+
+| Layer | File | Enforces |
+|-------|------|----------|
+| User | `~/.claude/CLAUDE.md` | English, conventional commits, terse style — all projects |
+| Project | this file | Agent order, service boundary rules, test tag conventions |
+| Directory | `src/.../music/CLAUDE.md` | "You are in the monolith root — prefer extraction over addition" |
+| Directory | `new-service/CLAUDE.md` | "Never reference monolith packages; these field names are banned from the API" |
+
+**Hooks vs. prompts:** Boundary enforcement that can be "reasoned around" is not enforcement. The PreToolUse hook in `.claude/hooks/fence-check.sh` (active from Phase 5) exits 1 if any Edit or Write would put a monolith-internal field name into `catalog-service/`. That is a hard block. Directory-level CLAUDE.md instructions are preference guidance — they have legitimate exceptions (e.g., a bug fix in the monolith while extraction is in progress). See `docs/adr/002-fence-strategy.md`.
+
+**Parallel agents with explicit context:** Three of the six phases spawn two subagents simultaneously. Each agent receives its complete context in the prompt — file contents, dependency lists, scoring rubrics. Subagents do not inherit the coordinator's conversation. This makes results independently reproducible and prevents context bleed between concerns.
+
 ## Build and Run
 
 ```bash
@@ -74,14 +89,37 @@ Subagents for the legacy modernisation workshop. Invoke with `@<agent-name>` in 
 
 | Agent | Challenge | When to invoke |
 |-------|-----------|----------------|
-| `architect-patient` | The Patient | Before anything — generates/analyses legacy anti-patterns in this codebase |
-| `pm-stories` | The Stories | After Patient; write user stories with testable ACs before touching code |
+| `pm-stories` | The Stories | First — write user stories with testable ACs before touching code |
 | `architect-map` | The Map | After Stories; produces the decomposition ADR with seams ranked by extraction risk |
 | `tester-pin` | The Pin | After Map, before any refactoring; writes characterization tests that pin current behaviour |
+| `agentic-scouts` | The Scouts | After Map; fan-out risk analysis — one subagent per candidate seam, aggregated into a ranked list |
 | `dev-cut` | The Cut | After Pin; extracts the first service — both monolith and new service must stay green |
 | `dev-fence` | The Fence | After Cut; builds the anti-corruption layer and enforces the package boundary |
+| `ops-weekend` | The Weekend | After Cut; generates the 3am runbook with decision tree and rollback triggers |
 | `quality-scorecard` | The Scorecard | After Fence; eval harness with golden set and CI-runnable metrics for LLM-driven refactoring |
-| `agentic-scouts` | The Scouts | Any time; fan-out risk analysis — one subagent per candidate seam, aggregated into a ranked list |
-| `ops-weekend` | The Weekend | Before cutover; generates the 3am runbook with decision tree and rollback triggers |
 
 Agents are defined in `.claude/agents/`. Each agent file is self-contained — read it for detailed instructions on what it produces and what it expects as input from prior agents.
+
+## Workshop Conventions
+
+**Execution plan:** See `PLAN.md` for the 6-phase coordinator plan with dependency graph and gate conditions.
+
+**Never add to the monolith** what belongs in an extracted service. If in doubt, check the seam ranking in `docs/adr/001-service-decomposition.md`.
+
+**Test tags:**
+- `@Tag("characterization")` — pins current monolith behaviour; must never be deleted, only updated with explicit intent
+- `@Tag("contract")` — verifies the extracted service's API shape
+- Both suites must be green on every commit that touches extraction code
+
+**Custom slash commands** (`.claude/commands/`):
+- `/extract-service <seam-name>` — step-by-step extraction playbook
+- `/pin-behavior` — runs characterization suite and reports deviations
+- `/score-seam <seam-name>` — invokes Scouts subagent for a named class/package
+
+## Service Boundary Rules
+
+1. The monolith (`org.cloudfoundry.samples.music.*`) must never import from the extracted service (`org.cloudfoundry.catalog.*`).
+2. Cross-boundary calls go only through the strangler proxy in `web/AlbumController` via `RestTemplate`.
+3. The extracted service's public API must never expose these monolith-internal field names: `lastPlayedBy`, `playCount`, `recommendedFor`, `_class`.
+4. All data crossing the boundary must pass through `acl/AlbumTranslator` — no direct field mapping elsewhere.
+5. The `catalog.service.enabled` flag controls the strangler proxy; default is `false` (monolith serves all traffic).
