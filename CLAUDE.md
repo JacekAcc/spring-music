@@ -67,3 +67,21 @@ cf push
 ```
 
 `manifest.yml` points to `build/libs/spring-music-1.0.jar` (1 GB memory, random route). Spring auto-reconfiguration is disabled; Java-cfenv handles service binding detection instead.
+
+## Modernisation Agents (in suggested order)
+
+Subagents for the legacy modernisation workshop. Invoke with `@<agent-name>` in Claude Code.
+
+| Agent | Challenge | When to invoke |
+|-------|-----------|----------------|
+| `architect-patient` | The Patient | Before anything — generates/analyses legacy anti-patterns in this codebase |
+| `pm-stories` | The Stories | After Patient; write user stories with testable ACs before touching code |
+| `architect-map` | The Map | After Stories; produces the decomposition ADR with seams ranked by extraction risk |
+| `tester-pin` | The Pin | After Map, before any refactoring; writes characterization tests that pin current behaviour |
+| `dev-cut` | The Cut | After Pin; extracts the first service — both monolith and new service must stay green |
+| `dev-fence` | The Fence | After Cut; builds the anti-corruption layer and enforces the package boundary |
+| `quality-scorecard` | The Scorecard | After Fence; eval harness with golden set and CI-runnable metrics for LLM-driven refactoring |
+| `agentic-scouts` | The Scouts | Any time; fan-out risk analysis — one subagent per candidate seam, aggregated into a ranked list |
+| `ops-weekend` | The Weekend | Before cutover; generates the 3am runbook with decision tree and rollback triggers |
+
+Agents are defined in `.claude/agents/`. Each agent file is self-contained — read it for detailed instructions on what it produces and what it expects as input from prior agents.
