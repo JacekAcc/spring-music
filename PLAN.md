@@ -18,7 +18,7 @@ Challenge 0 (CLAUDE.md setup)
 
 ```
 Phase 1:  [manual setup]                             ✓ DONE
-Phase 2:  [pm-stories] || [architect-map]            ← 2 agents in parallel
+Phase 2:  [pm-stories] || [architect-map]            ✓ DONE
 Phase 3:  [tester-pin] || [agentic-scouts]            ← 2 agents in parallel
 Phase 4:  [dev-cut]
 Phase 5:  [dev-fence]  || [ops-weekend]               ← 2 agents in parallel
@@ -48,7 +48,7 @@ No agent. Human task: create the CLAUDE.md hierarchy and supporting config.
 
 ---
 
-## Phase 2 — Stories + Map (2 agents in parallel)
+## Phase 2 — Stories + Map (2 agents in parallel) ✓ DONE
 
 Spawn both agents in a single coordinator message.
 
