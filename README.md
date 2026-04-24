@@ -1,6 +1,18 @@
 # Team Claude & Friends
 
 ## Participants
+
+### Human Participants
+- Dabrowska Ewa [Developer]
+- Jakubiuk Michal [Data engineer]
+- Korzeniowski Lukasz [Developer]
+- Skibicki Tomasz [Data engineer]
+- Slupianek Jacek [Developer]
+- Swiatkowski Lukasz [Developer]
+- Szymczak Michal [Developer]
+- Tomaszewski Karol [Developer]
+
+### Agent Team
 - pm-stories (Product Manager — user stories with acceptance criteria)
 - architect-map (Architect — decomposition ADR and seam ranking)
 - architect-patient (Legacy Analyst — god class and circular dependency archaeology)
