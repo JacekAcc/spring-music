@@ -40,6 +40,8 @@ What exists in the repo now:
 
 Phases 3–6 (characterization tests, service extraction, fence, runbook, eval harness) are scaffolded but not yet executed.
 
+Additionally, the original AngularJS 1.2.16 SPA (2013, EOL) was replaced with a modern Vue 3 + Vite + Tailwind CSS frontend living in `frontend/`. The new app covers all original features: album CRUD, grid/list view toggle, client-side sorting, inline field editing, add/edit modal with year validation, success/error notifications, active profile badges in the header, and an error-testing page. The Spring Boot REST API (`/albums`, `/appinfo`, `/errors`) is untouched. The frontend project is self-contained — `npm run build` produces a `dist/` folder ready to be served by Spring Boot once the Gradle wiring is added.
+
 ## Challenges Attempted
 
 | # | Challenge | Status | Notes |
@@ -65,6 +67,12 @@ Phases 3–6 (characterization tests, service extraction, fence, runbook, eval h
 **Hard fence hook over prompt guidance.** The PreToolUse hook exits 1 if any edit writes banned field names (`lastPlayedBy`, `playCount`, `recommendedFor`, `_class`) into `catalog-service/`. A model that reasons past a prompt-level instruction produces a leaking API contract; a hook that exits 1 does not. See `docs/adr/002-fence-strategy.md`.
 
 **Extraction order: Catalog → User Preference → Recommendation Engine.** The catalog seam is the cleanest (coupling score 1, no data-model tangle). The recommendation engine is last because its circular `@Lazy` dependency cannot be resolved until the facade is broken apart and both ends have test coverage.
+
+**Vue 3 over React / Angular for the frontend.** Less boilerplate than React for a CRUD app this size; more approachable migration path from AngularJS than Angular 17+.
+
+**Tailwind CSS over Bootstrap.** Utility-first styling avoids the jQuery dependency and the outdated Bootstrap 3 look; no custom CSS file needed.
+
+**Decoupled frontend build (dist/ not wired into Gradle yet).** Avoids requiring a local Java install during frontend development. When Java is available, `vite.config.js` `build.outDir` can point at `src/main/resources/static/` and a Gradle exec task can drive the npm build.
 
 ## How to Run It
 
@@ -98,6 +106,15 @@ java -jar -Dspring.profiles.active=mysql build/libs/spring-music.jar
 # Profiles: mysql | postgres | mongodb | redis
 ```
 
+**Frontend dev server** (Node.js 18+, no Java required):
+
+```bash
+cd frontend
+npm install        # once
+npm run dev        # → http://localhost:5173 (proxies API to :8080)
+npm run build      # outputs to frontend/dist/
+```
+
 ## If We Had More Time
 
 1. **Run the Pin agent** — characterization tests are the load-bearing prerequisite for everything else; without them the extraction has no safety net.
@@ -106,6 +123,9 @@ java -jar -Dspring.profiles.active=mysql build/libs/spring-music.jar
 4. **Wire the fence hook** — `.claude/settings.json` and `fence-check.sh` stubs are in place but untested; a single bad edit before the hook is active can ship a leaking field name permanently.
 5. **Write the cutover runbook** — the ops-weekend agent produces the 3am decision tree; without it, flipping `catalog.service.enabled` in production is a leap of faith.
 6. **Build the eval harness** — the quality-scorecard golden set is the only thing that gives a defensible number to "how well did Claude do this extraction."
+7. **Wire the Vite build into Gradle** so `./gradlew build` produces a self-contained JAR with the Vue app inside.
+8. **Add frontend tests** (Vitest for unit, Playwright for e2e).
+9. **Replace the `confirm()` delete dialog** with a proper inline confirmation component.
 
 The CLAUDE.md hierarchy and ADR are solid. Everything held together with tape is downstream of phase 2.
 
@@ -118,3 +138,5 @@ The CLAUDE.md hierarchy and ADR are solid. Everything held together with tape is
 **Hooks for correctness constraints, prompts for preferences.** Claude can reason around a prompt instruction; it cannot reason around an `exit 1`. The PreToolUse fence hook represents the boundary between things Claude should prefer (don't add to the monolith) and things that must never happen (leak `lastPlayedBy` into the catalog API). Discovering this distinction and wiring it into the harness was the highest-leverage moment of the workshop.
 
 **Slash commands as reusable playbooks.** `/extract-service <seam>` codifies the 7-step extraction sequence so it doesn't have to be re-explained each session. `/pin-behavior` runs the characterization suite and classifies each failure as regression vs. intentional change. Claude following a slash command is measurably more consistent than Claude following prose instructions in a chat window.
+
+**Frontend migration via planning mode.** Claude explored the existing AngularJS codebase, proposed the migration strategy (framework choice, build integration, component mapping), and scaffolded the entire `frontend/` directory — all 19 files — in a single session. The planning phase caught the Java/Gradle constraint before any code was written, which saved a full rework. The 1-to-1 mapping of AngularJS controllers/directives to Vue components took minutes instead of hours of reading AngularJS docs.
