@@ -19,7 +19,7 @@ Challenge 0 (CLAUDE.md setup)
 ```
 Phase 1:  [manual setup]                             ✓ DONE
 Phase 2:  [pm-stories] || [architect-map]            ✓ DONE
-Phase 3:  [tester-pin] || [agentic-scouts]            ← 2 agents in parallel
+Phase 3:  [tester-pin] || [agentic-scouts]           ✓ DONE
 Phase 4:  [dev-cut]
 Phase 5:  [dev-fence]  || [ops-weekend]               ← 2 agents in parallel
 Phase 6:  [quality-scorecard]
@@ -70,7 +70,7 @@ Spawn both agents in a single coordinator message.
 
 ---
 
-## Phase 3 — Pin + Scouts (2 agents in parallel)
+## Phase 3 — Pin + Scouts (2 agents in parallel) ✓ DONE
 
 Spawn both agents in a single coordinator message after Phase 2 completes.
 
