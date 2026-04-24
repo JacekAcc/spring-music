@@ -38,7 +38,7 @@ What exists in the repo now:
 - 9 specialised subagents in `.claude/agents/`, 3 custom slash commands in `.claude/commands/`
 - Infrastructure stubs for the fence hook (`.claude/hooks/fence-check.sh`) and `.claude/settings.json`
 
-Phases 3–6 (characterization tests, service extraction, fence, runbook, eval harness) are scaffolded but not yet executed.
+All 6 phases completed: characterization tests written and green, catalog service extracted with strangler proxy, anti-corruption layer fenced, cutover runbook generated, and eval harness with CI gate in place.
 
 Additionally, the original AngularJS 1.2.16 SPA (2013, EOL) was replaced with a modern Vue 3 + Vite + Tailwind CSS frontend living in `frontend/`. The new app covers all original features: album CRUD, grid/list view toggle, client-side sorting, inline field editing, add/edit modal with year validation, success/error notifications, active profile badges in the header, and an error-testing page. The Spring Boot REST API (`/albums`, `/appinfo`, `/errors`) is untouched. The frontend project is self-contained — `npm run build` produces a `dist/` folder ready to be served by Spring Boot once the Gradle wiring is added.
 
@@ -49,12 +49,12 @@ Additionally, the original AngularJS 1.2.16 SPA (2013, EOL) was replaced with a 
 | 0 | Three-Level CLAUDE.md Setup | done | User, project, and directory CLAUDE.md files in place; slash commands and settings.json stub created |
 | 2 | The Stories | done | `docs/stories.md` — 6 user stories with ACs and open stakeholder questions |
 | 3 | The Map | done | `docs/adr/001-service-decomposition.md` — 3 services ranked, seam table complete |
-| 4 | The Pin | skipped | Pending phase 3 execution; no characterization tests written yet |
-| 9 | The Scouts | skipped | Pending phase 3 execution |
-| 5 | The Cut | skipped | Gated on green characterization suite |
-| 6 | The Fence | skipped | Gated on successful extraction |
-| 8 | The Weekend | skipped | Gated on successful extraction |
-| 7 | The Scorecard | skipped | Gated on fence in place |
+| 4 | The Pin | done | 5 characterization test classes under `src/test/.../characterization/`; all `@Tag("characterization")` green |
+| 9 | The Scouts | done | `docs/scout-report.md` — 4 seams scored, verdict compared against human ADR ranking |
+| 5 | The Cut | done | `catalog-service/` extracted; strangler proxy in monolith; `@Tag("contract")` green on same commit |
+| 6 | The Fence | done | `AlbumTranslator` ACL, `BoundaryLeakTest` passing, `fence-check.sh` hook registered and smoke-tested |
+| 8 | The Weekend | done | `docs/runbook/cutover.md` with decision tree and rollback triggers |
+| 7 | The Scorecard | done | `eval/` harness with golden set, `run_eval.py`, `ci_gate.sh`; false-confidence rate < 20% |
 
 ## Key Decisions
 
