@@ -184,6 +184,7 @@
 
     .decision-card.hook .label { color: #f85149; }
     .decision-card.prompt .label { color: #3fb950; }
+    .decision-card.choice .label { color: #79c0ff; }
     .decision-card p { font-size: 0.875rem; margin: 0; }
 
     .status-done { color: #3fb950; font-weight: 600; }
@@ -287,6 +288,58 @@
       <div class="pipeline-step">score quality</div>
     </div>
     <p>Claude Code coordinates the work across 6 phases. No phase starts until the previous gate is verified by running tests — not by Claude's judgement, by the test suite.</p>
+  </section>
+
+  <!-- FRONTEND MODERNISATION -->
+  <section>
+    <h2>Frontend Modernisation</h2>
+    <p>Alongside the backend extraction, the original AngularJS 1.2.16 SPA (2013, EOL) was replaced with a modern Vue 3 + Vite + Tailwind CSS frontend. All original features were preserved — the Spring Boot REST API was not touched.</p>
+
+    <h3>Stack migration</h3>
+    <div class="pipeline">
+      <div class="pipeline-step">AngularJS 1.2 + Bootstrap 3</div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">Vue 3 + Vite</div>
+      <div class="pipeline-arrow">+</div>
+      <div class="pipeline-step">Tailwind CSS</div>
+      <div class="pipeline-arrow">+</div>
+      <div class="pipeline-step">vue-router 4</div>
+    </div>
+
+    <h3>Component mapping</h3>
+    <table class="context-table">
+      <thead>
+        <tr><th>AngularJS</th><th>Vue 3 equivalent</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>AlbumsController</code></td><td><code>AlbumsView.vue</code> — Composition API, owns sort / view-mode / CRUD state</td></tr>
+        <tr><td><code>AlbumModalController</code> + Bootstrap modal</td><td><code>AlbumModal.vue</code> — native <code>&lt;dialog&gt;</code> via Teleport, year validation preserved</td></tr>
+        <tr><td><code>AlbumEditorController</code> + <code>in-place-edit</code> directive</td><td><code>InlineEdit.vue</code> — click-to-edit with Enter / Escape, auto-focus</td></tr>
+        <tr><td><code>StatusController</code> + <code>$rootScope</code> events</td><td><code>useStatus()</code> composable — module-level reactive singleton, no Pinia needed</td></tr>
+        <tr><td><code>InfoController</code> + <code>/appinfo</code></td><td><code>AppHeader.vue</code> — fetches on mount, renders profile badges</td></tr>
+        <tr><td><code>ngRoute</code></td><td><code>vue-router@4</code> — two routes: <code>/</code> (albums) and <code>/errors</code></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Key frontend decisions</h3>
+    <div class="decision-grid">
+      <div class="decision-card choice">
+        <div class="label">Vue 3 over React / Angular</div>
+        <p>Less boilerplate than React for a CRUD app this size. Angular 17+ would have been a near-complete rewrite with heavy tooling. Vue's Composition API maps cleanly onto AngularJS controller patterns.</p>
+      </div>
+      <div class="decision-card choice">
+        <div class="label">Tailwind over Bootstrap</div>
+        <p>Drops the jQuery dependency and the outdated Bootstrap 3 icon sprites entirely. Utility classes replace both <code>app.css</code> and <code>multi-columns-row.css</code> with no custom stylesheet.</p>
+      </div>
+      <div class="decision-card prompt">
+        <div class="label">Decoupled build (dist/ not in Gradle)</div>
+        <p><code>npm run build</code> outputs to <code>frontend/dist/</code>. No Java install required for frontend dev. When Java is available, one Gradle exec task and a <code>build.outDir</code> change wire it into the JAR.</p>
+      </div>
+      <div class="decision-card prompt">
+        <div class="label">Plain JS over TypeScript</div>
+        <p>Keeps the scaffolding lightweight for a demo app. The API layer and composables are small enough that type inference covers most cases; TypeScript can be layered on without restructuring.</p>
+      </div>
+    </div>
   </section>
 
   <!-- HOW CLAUDE WAS TAUGHT -->
@@ -424,13 +477,21 @@
         <span class="icon">→</span>
         <span>The cutover runbook is generated <em>before</em> cutover, rehearsed once, and includes a Mermaid decision tree — so the 3am engineer makes zero judgement calls.</span>
       </li>
+      <li>
+        <span class="icon">→</span>
+        <span>Planning mode caught the Java/Gradle constraint <em>before any code was written</em> — the constraint surfaced in requirements, not in implementation, saving a full rework of the build integration.</span>
+      </li>
+      <li>
+        <span class="icon">→</span>
+        <span>The 1-to-1 mapping from AngularJS controllers and directives to Vue 3 components was scaffolded in minutes; understanding AngularJS 1.x internals well enough to do this manually would have taken hours of reading dated documentation.</span>
+      </li>
     </ul>
   </section>
 
 </main>
 
 <footer>
-  Spring Music Modernisation Workshop &mdash; Claude Code bootcamp &mdash; Jacek Slupianek
+  Spring Music Modernisation Workshop &mdash; Claude Code bootcamp &mdash; Jacek Slupianek &amp; Lukasz Swiatkowski
 </footer>
 
 </body>
